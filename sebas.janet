@@ -14,7 +14,6 @@
     :lf "\n"
     :sp " "
     :ht "\t"
-    :quote "\""
 
     :crlf (* :cr :lf)
 
