@@ -1,7 +1,7 @@
 #!/usr/bin/env janet
 
-(def- request-header
-  '{:main :request
+(def request-header*
+  ~{:main :request
 
     :octet 1
     :char (range "\0\x7f")
@@ -18,7 +18,7 @@
 
     :crlf (* :cr :lf)
 
-    :lws (replace (* (? :crlf) (some (+ :sp :ht))) " ")
+    :lws (/ (* (? :crlf) (some (+ :sp :ht))) " ")
 
     :text (+ :lws (* (! :ctl) :octet))
 
@@ -97,11 +97,14 @@
     :request-header :message-header
     :entity-header :message-header
 
-    :message-header (group (* ':field-name ":" (drop (any :lws)) ':field-value))
+    :message-header (group (* ':field-name ":" (drop (any :lws))
+                             (replace (% :field-value)
+                               ,string/trim)))
     :field-name :token
-    :field-value (any (+ :field-content :lws))
-    :field-content (+ (any (+ :token :separator :quoted-string))
-                     (any :text))
+    :field-value (any (+ (/ (some :lws) " ")
+                        ':token
+                        ':quoted-string
+                        ':separator))
 
     :request-line (* ':method  :sp ':request-uri :sp :http-version :crlf)
     :method (+ "OPTIONS"
@@ -116,6 +119,8 @@
     :extension-method :token
 
     :request-uri (some (* (! :ctl) (! :sp) :char))})
+
+(def request-header (peg/compile request-header*))
 
 (defn handler
   [stream]
